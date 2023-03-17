@@ -24,7 +24,7 @@ def add_chat_history(chat_history, message):
     chat_history.append({"role": "user", "content": message.content})
 
     # Limit the chat history to the last 5 messages
-    chat_history = chat_history[-5:]
+    chat_history = chat_history[-10:]
 
 # Load prompt parameters from JSON file
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
@@ -44,14 +44,15 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content.startswith("$$"):
+    if message.content.startswith("##"):
         print(f"Responding to message: {message.content}")
 
         message_content = message.content[2:]
 
         response = openai.ChatCompletion.create(
             model=prompt_parameters["model"],
-            messages=prompt_parameters["messages"] + chat_history + [{"role": "user", "content": message_content}]
+            messages=prompt_parameters["messages"] + chat_history + [{"role": "user", "content": message_content}],
+            max_tokens=200
         )
 
         response_text = response.choices[0].message['content'].strip()
