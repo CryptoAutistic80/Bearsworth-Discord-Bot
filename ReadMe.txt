@@ -40,7 +40,7 @@ Usage:
 
 2.   Add the bot to your Discord server by visiting the Discord Developers Portal, creating a new bot and copying its token.
 
-3.   Send a direct message to the bot on Discord to start chatting! Type /chat to start a new conversation and /end to end a            conversation.
+3.   Send a direct message to the bot on Discord to start chatting! Type !chat to start a new conversation and !end to end a            conversation.
 
 Acknowledgements:
 

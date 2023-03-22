@@ -16,7 +16,7 @@ OPENAI_KEY = os.environ['KEY_OPENAI']
 openai.api_key = OPENAI_KEY
 
 intents = discord.Intents.all()
-client = commands.Bot(command_prefix="/", intents=intents)
+client = commands.Bot(command_prefix="!", intents=intents)
 
 active_threads = set()
 
@@ -93,18 +93,16 @@ async def chat(ctx):
         # Create a private thread with the user who sent the message
         print("Chat command triggered")  # Debugging line
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
-        await thread.send(f"Hello {ctx.author.mention}! You can start chatting with me. Type '/end' to end the conversation.")
+        await thread.send(f"Hello {ctx.author.mention}! You can start chatting with me. Type '!end' to end the conversation.")
         active_threads.add(ctx.author.id)
 
 @client.command()
 async def end(ctx):
     if isinstance(ctx.channel, discord.Thread) and ctx.channel.is_private:
-        await ctx.send("Goodbye!")
         await asyncio.sleep(2)
         await ctx.channel.delete()
         active_threads.discard(ctx.author.id)
 
-@client.event
 async def on_message(message):
     if message.author == client.user:
         return
@@ -125,7 +123,12 @@ async def on_message(message):
 
     try:
         response_text = await response_future
-        await message.channel.send(response_text)
+        # Check if the channel still exists before sending a message
+        if message.channel:
+            await message.channel.send(response_text)
+    except discord.errors.NotFound:
+        # Handle NotFound exception if the channel no longer exists
+        print("Error: Channel not found")
     except Exception as e:
         print(f"Error occurred while processing message after all retries: {e}")
         await message.channel.send("I'm sorry, there was an issue processing your request. Please try again later.")
