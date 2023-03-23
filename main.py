@@ -23,18 +23,18 @@ active_threads = set()
 
 user_chat_histories = {}
 
-MAX_RETRIES = 5
+MAX_RETRIES = 10
 
 def add_chat_history(user_id, author, content):
     global user_chat_histories
     if user_id not in user_chat_histories:
         user_chat_histories[user_id] = []
     user_chat_histories[user_id].append({"role": "user", "content": content})
-    user_chat_histories[user_id] = user_chat_histories[user_id][-10:]
+    user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
 
-api_semaphore = asyncio.Semaphore(50)
+api_semaphore = asyncio.Semaphore(30)
 
 # Create the request queue
 request_queue = asyncio.Queue()
@@ -63,7 +63,7 @@ async def process_requests():
                     response_future.set_result(result)
 
         try:
-            await asyncio.wait_for(request_queue.join(), timeout=0.8)  # Short sleep to avoid excessive looping
+            await asyncio.wait_for(request_queue.join(), timeout=0.5)  # Short sleep to avoid excessive looping
         except asyncio.exceptions.TimeoutError:
             pass  # Ignore the timeout and continue the loop
 
@@ -74,7 +74,7 @@ async def get_response(message_author_id, message_content):
                 loop = asyncio.get_event_loop()
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=prompt_parameters["model"],
-                    messages=prompt_parameters["messages"] + user_chat_histories[message_author_id] + [{"role": "user", "content": message_content}],
+                    messages=prompt_parameters["messages"] + user_chat_histories.get(message_author_id, []) + [{"role": "user", "content": message_content}],
                     max_tokens=200
                 ))
             return response.choices[0].message['content'].strip()
@@ -131,6 +131,8 @@ async def on_message(message):
         # Check if the channel still exists before sending a message
         if message.channel:
             await message.channel.send(response_text)
+            # Add the bot's response to the user's chat history
+            add_chat_history(message.author.id, client.user, response_text)
     except NotFound:
         pass
     except Exception as e:
