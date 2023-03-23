@@ -5,6 +5,7 @@ import json
 import asyncio
 from discord.ext import commands
 from keep_alive import keep_alive
+from discord.errors import NotFound
 
 def load_prompt_parameters(filename):
     with open(filename, 'r') as file:
@@ -20,16 +21,20 @@ client = commands.Bot(command_prefix="!", intents=intents)
 
 active_threads = set()
 
-chat_history = []
+user_chat_histories = {}
 
-def add_chat_history(message):
-    global chat_history
-    chat_history.append({"role": "user", "content": message.content})
-    chat_history = chat_history[-25:]
+MAX_RETRIES = 5
+
+def add_chat_history(user_id, author, content):
+    global user_chat_histories
+    if user_id not in user_chat_histories:
+        user_chat_histories[user_id] = []
+    user_chat_histories[user_id].append({"role": "user", "content": content})
+    user_chat_histories[user_id] = user_chat_histories[user_id][-10:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
 
-api_semaphore = asyncio.Semaphore(5)
+api_semaphore = asyncio.Semaphore(50)
 
 # Create the request queue
 request_queue = asyncio.Queue()
@@ -39,8 +44,8 @@ async def process_requests():
         tasks = []
         for _ in range(api_semaphore._value):  # Get the available API slots
             if not request_queue.empty():
-                message_content, response_future = await request_queue.get()
-                task = asyncio.create_task(get_response(message_content))
+                user_id, message_content, response_future = await request_queue.get()
+                task = asyncio.create_task(get_response(user_id, message_content))
                 tasks.append((task, response_future))
                 request_queue.task_done()
             else:
@@ -57,23 +62,24 @@ async def process_requests():
                 else:
                     response_future.set_result(result)
 
-        await asyncio.sleep(0.1)  # Short sleep to avoid excessive looping
+        try:
+            await asyncio.wait_for(request_queue.join(), timeout=0.8)  # Short sleep to avoid excessive looping
+        except asyncio.exceptions.TimeoutError:
+            pass  # Ignore the timeout and continue the loop
 
-
-async def get_response(message_content):
-    max_retries = 3
-    for attempt in range(max_retries):
+async def get_response(message_author_id, message_content):
+    for attempt in range(MAX_RETRIES):
         try:
             async with api_semaphore:
                 loop = asyncio.get_event_loop()
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=prompt_parameters["model"],
-                    messages=prompt_parameters["messages"] + chat_history + [{"role": "user", "content": message_content}],
+                    messages=prompt_parameters["messages"] + user_chat_histories[message_author_id] + [{"role": "user", "content": message_content}],
                     max_tokens=200
                 ))
             return response.choices[0].message['content'].strip()
         except Exception as e:
-            if attempt < max_retries - 1:
+            if attempt < MAX_RETRIES - 1:
                 print(f"Error occurred while processing message. Retry attempt {attempt + 1}: {e}")
                 await asyncio.sleep(1)
             else:
@@ -86,12 +92,10 @@ async def on_ready():
 
 @client.command()
 async def chat(ctx):
-    # Check if the user already has an active private thread
     if ctx.author.id in active_threads:
         await ctx.send("Woooah easy tiger! One conversation not enough for you?")
     else:
-        # Create a private thread with the user who sent the message
-        print("Chat command triggered")  # Debugging line
+        print("Chat command triggered")
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
         await thread.send(f"Hello {ctx.author.mention}! You can start chatting with me. Type '!end' to end the conversation.")
         active_threads.add(ctx.author.id)
@@ -103,6 +107,7 @@ async def end(ctx):
         await ctx.channel.delete()
         active_threads.discard(ctx.author.id)
 
+@client.event
 async def on_message(message):
     if message.author == client.user:
         return
@@ -114,21 +119,20 @@ async def on_message(message):
     if not isinstance(message.channel, discord.Thread) or not message.channel.is_private:
         return
 
-    add_chat_history(message)
+    add_chat_history(message.author.id, message.author, message.content)
 
     message_content = message.content
     response_future = asyncio.Future()
 
-    await request_queue.put((message_content, response_future))
+    await request_queue.put((message.author.id, message_content, response_future))
 
     try:
         response_text = await response_future
         # Check if the channel still exists before sending a message
         if message.channel:
             await message.channel.send(response_text)
-    except discord.errors.NotFound:
-        # Handle NotFound exception if the channel no longer exists
-        print("Error: Channel not found")
+    except NotFound:
+        pass
     except Exception as e:
         print(f"Error occurred while processing message after all retries: {e}")
         await message.channel.send("I'm sorry, there was an issue processing your request. Please try again later.")
