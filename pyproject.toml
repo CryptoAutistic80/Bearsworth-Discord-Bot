@@ -15,6 +15,7 @@ openai = "^0.27.2"
 xds-protos = "^0.0.11"
 gTTS = "^2.3.1"
 pydub = "^0.25.1"
+pinecone-client = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"

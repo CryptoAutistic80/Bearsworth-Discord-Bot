@@ -6,6 +6,9 @@ import asyncio
 from discord.ext import commands
 from keep_alive import keep_alive
 from discord.errors import NotFound
+import time
+import uuid
+import datetime
 
 def load_prompt_parameters(filename):
     with open(filename, 'r') as file:
@@ -25,11 +28,50 @@ user_chat_histories = {}
 
 MAX_RETRIES = 10
 
+async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs"):
+    user_folder = os.path.join(chat_logs_folder, str(user_id))
+    os.makedirs(user_folder, exist_ok=True)
+
+    timestamp = int(time.time())
+    formatted_timestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    unique_id = str(uuid.uuid4())
+
+    metadata = {
+        "timestamp": formatted_timestamp,
+        "unique_id": unique_id,
+        "user_id": user_id,
+    }
+
+    chat_log = {
+        "metadata": metadata,
+        "chat_history": chat_history,
+    }
+
+    with open(os.path.join(user_folder, f"{unique_id}.json"), "w") as file:
+        json.dump(chat_log, file, indent=4)
+      
+
+def load_chat_history(user_id, unique_ids, chat_logs_folder="chat_logs"):
+    user_folder = os.path.join(chat_logs_folder, str(user_id))
+    
+    user_chat_histories[user_id] = []
+
+    for unique_id in unique_ids:
+        try:
+            with open(os.path.join(user_folder, f"{unique_id}.json"), "r") as file:
+                chat_log = json.load(file)
+                if chat_log["metadata"]["user_id"] == user_id:
+                    user_chat_histories[user_id].extend(chat_log["chat_history"])
+        except FileNotFoundError:
+            print(f"Chat history file not found for user {user_id} with unique_id {unique_id}.")
+
+    user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
+
 def add_chat_history(user_id, author, content):
     global user_chat_histories
     if user_id not in user_chat_histories:
         user_chat_histories[user_id] = []
-    user_chat_histories[user_id].append({"role": "user", "content": content})
+    user_chat_histories[user_id].append({"role": "user" if author != client.user else "assistant", "content": content})
     user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
@@ -75,7 +117,10 @@ async def get_response(message_author_id, message_content):
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=prompt_parameters["model"],
                     messages=prompt_parameters["messages"] + user_chat_histories.get(message_author_id, []) + [{"role": "user", "content": message_content}],
-                    max_tokens=200
+                    max_tokens=200,
+                    temperature=0.8,
+                    frequency_penalty=0.25,
+                    presence_penalty=0.05
                 ))
             return response.choices[0].message['content'].strip()
         except Exception as e:
@@ -103,6 +148,12 @@ async def chat(ctx):
 @client.command()
 async def end(ctx):
     if isinstance(ctx.channel, discord.Thread) and ctx.channel.is_private:
+        user_id = ctx.author.id
+        if user_id in user_chat_histories:
+            chat_history = user_chat_histories[user_id]
+            await save_chat_history(user_id, chat_history)
+            del user_chat_histories[user_id]
+
         await asyncio.sleep(2)
         await ctx.channel.delete()
         active_threads.discard(ctx.author.id)
