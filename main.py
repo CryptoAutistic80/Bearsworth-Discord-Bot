@@ -54,6 +54,10 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
 def load_chat_history(user_id, unique_ids, chat_logs_folder="chat_logs"):
     user_folder = os.path.join(chat_logs_folder, str(user_id))
     
+    # Check if the user folder exists
+    if not os.path.exists(user_folder):
+        return []
+
     user_chat_histories[user_id] = []
 
     for unique_id in unique_ids:
@@ -66,6 +70,7 @@ def load_chat_history(user_id, unique_ids, chat_logs_folder="chat_logs"):
             print(f"Chat history file not found for user {user_id} with unique_id {unique_id}.")
 
     user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
+
 
 def add_chat_history(user_id, author, content):
     global user_chat_histories
@@ -117,7 +122,7 @@ async def get_response(message_author_id, message_content):
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=prompt_parameters["model"],
                     messages=prompt_parameters["messages"] + user_chat_histories.get(message_author_id, []) + [{"role": "user", "content": message_content}],
-                    max_tokens=200,
+                    max_tokens=500,
                     temperature=0.8,
                     frequency_penalty=0.25,
                     presence_penalty=0.05
@@ -141,9 +146,24 @@ async def chat(ctx):
         await ctx.send("Woooah easy tiger! One conversation not enough for you?")
     else:
         print("Chat command triggered")
+
+        # Load chat history for the user
+        user_chat_dir = f"chat_logs/{ctx.author.id}"
+        if os.path.exists(user_chat_dir):
+            user_chat_files = sorted([f for f in os.listdir(user_chat_dir) if f.endswith(".json")], reverse=True)
+        else:
+            user_chat_files = []
+
+        unique_ids = [file.split(".")[0] for file in user_chat_files[:20]] if user_chat_files else []
+        load_chat_history(ctx.author.id, unique_ids)
+
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
         await thread.send(f"Hello {ctx.author.mention}! You can start chatting with me. Type '!end' to end the conversation.")
         active_threads.add(ctx.author.id)
+
+        # Call end_inactive_conversation after starting the conversation
+        asyncio.create_task(end_inactive_conversation(ctx.author.id, thread))
+
 
 @client.command()
 async def end(ctx):
@@ -157,6 +177,19 @@ async def end(ctx):
         await asyncio.sleep(2)
         await ctx.channel.delete()
         active_threads.discard(ctx.author.id)
+
+async def end_inactive_conversation(user_id, channel, timeout=15*60):
+    await asyncio.sleep(timeout)
+    if user_id not in active_threads:
+        return
+
+    if user_id in user_chat_histories:
+        chat_history = user_chat_histories[user_id]
+        await save_chat_history(user_id, chat_history)
+        del user_chat_histories[user_id]
+
+    await channel.delete()
+    active_threads.discard(user_id)
 
 @client.event
 async def on_message(message):
@@ -184,11 +217,13 @@ async def on_message(message):
             await message.channel.send(response_text)
             # Add the bot's response to the user's chat history
             add_chat_history(message.author.id, client.user, response_text)
+
     except NotFound:
         pass
     except Exception as e:
         print(f"Error occurred while processing message after all retries: {e}")
         await message.channel.send("I'm sorry, there was an issue processing your request. Please try again later.")
+
 
 keep_alive()
 client.run(TOKEN)
