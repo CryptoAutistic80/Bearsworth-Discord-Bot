@@ -156,12 +156,6 @@ async def chat(ctx):
         print("Chat command triggered")
 
         # Load chat history for the user
-        user_chat_dir = f"chat_logs/{ctx.author.id}"
-        if os.path.exists(user_chat_dir):
-            user_chat_files = sorted([f for f in os.listdir(user_chat_dir) if f.endswith(".json")], reverse=True)
-        else:
-            user_chat_files = []
-
         load_chat_history(ctx.author.id)
 
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
