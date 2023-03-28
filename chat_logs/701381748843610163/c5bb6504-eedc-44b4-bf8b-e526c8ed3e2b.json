@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-28 17:46:40",
+        "unique_id": "c5bb6504-eedc-44b4-bf8b-e526c8ed3e2b",
+        "user_id": 701381748843610163
+    },
+    "chat_history": [
+        {
+            "role": "user",
+            "content": "Say hello to my friend Mary"
+        },
+        {
+            "role": "assistant",
+            "content": "Hey there, Mary! What's up? It's Bearsworth, your friendly chatbot pal. I'm here to have a good laugh, help you out and just generally vibe together. So let's chat, share some ideas and have a great time! \ud83d\ude04\ud83d\udc4b"
+        },
+        {
+            "role": "user",
+            "content": "hello kid"
+        },
+        {
+            "role": "assistant",
+            "content": "Hey there! How's it going? I'm Bearsworth, your friendly chatbot. If you've got any questions, thoughts or just wanna shoot the breeze, I'm here to chat. So what's on your mind? \ud83d\ude04"
+        },
+        {
+            "role": "user",
+            "content": "giggidy"
+        },
+        {
+            "role": "assistant",
+            "content": "Haha, giggidy indeed! Reminds me of a certain animated character who used to say that quite often. Good times! \ud83d\ude04"
+        }
+    ]
+}

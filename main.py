@@ -34,21 +34,24 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
 
     timestamp = int(time.time())
     formatted_timestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-    unique_id = str(uuid.uuid4())
 
-    metadata = {
-        "timestamp": formatted_timestamp,
-        "unique_id": unique_id,
-        "user_id": user_id,
-    }
+    for i in range(0, len(chat_history), 6):
+        segment = chat_history[i:i+6]
+        unique_id = str(uuid.uuid4())
 
-    chat_log = {
-        "metadata": metadata,
-        "chat_history": chat_history,
-    }
+        metadata = {
+            "timestamp": formatted_timestamp,
+            "unique_id": unique_id,
+            "user_id": user_id,
+        }
 
-    with open(os.path.join(user_folder, f"{unique_id}.json"), "w") as file:
-        json.dump(chat_log, file, indent=4)
+        segmented_chat_log = {
+            "metadata": metadata,
+            "chat_history": segment,
+        }
+
+        with open(os.path.join(user_folder, f"{unique_id}.json"), "w") as file:
+            json.dump(segmented_chat_log, file, indent=4)
       
 
 def load_chat_history(user_id, unique_ids, chat_logs_folder="chat_logs"):
