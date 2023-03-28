@@ -54,7 +54,7 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
             json.dump(segmented_chat_log, file, indent=4)
       
 
-def load_chat_history(user_id, unique_ids, chat_logs_folder="chat_logs"):
+def load_chat_history(user_id, chat_logs_folder="chat_logs"):
     user_folder = os.path.join(chat_logs_folder, str(user_id))
     
     # Check if the user folder exists
@@ -63,14 +63,19 @@ def load_chat_history(user_id, unique_ids, chat_logs_folder="chat_logs"):
 
     user_chat_histories[user_id] = []
 
-    for unique_id in unique_ids:
+    chat_files = [f for f in os.listdir(user_folder) if f.endswith(".json")]
+
+    # Sort files based on timestamp
+    chat_files.sort(key=lambda x: json.load(open(os.path.join(user_folder, x)))["metadata"]["timestamp"])
+
+    for chat_file in chat_files:
         try:
-            with open(os.path.join(user_folder, f"{unique_id}.json"), "r") as file:
-                chat_log = json.load(file)
-                if chat_log["metadata"]["user_id"] == user_id:
-                    user_chat_histories[user_id].extend(chat_log["chat_history"])
+            with open(os.path.join(user_folder, chat_file), "r") as file:
+                segmented_chat_log = json.load(file)
+                if segmented_chat_log["metadata"]["user_id"] == user_id:
+                    user_chat_histories[user_id].extend(segmented_chat_log["chat_history"])
         except FileNotFoundError:
-            print(f"Chat history file not found for user {user_id} with unique_id {unique_id}.")
+            print(f"Chat history file not found for user {user_id} with file {chat_file}.")
 
     user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
 
@@ -158,7 +163,7 @@ async def chat(ctx):
             user_chat_files = []
 
         unique_ids = [file.split(".")[0] for file in user_chat_files[:20]] if user_chat_files else []
-        load_chat_history(ctx.author.id, unique_ids)
+        load_chat_history(ctx.author.id)
 
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
         await thread.send(f"Hello {ctx.author.mention}! You can start chatting with me. Type '!end' to end the conversation.")
