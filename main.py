@@ -162,7 +162,6 @@ async def chat(ctx):
         else:
             user_chat_files = []
 
-        unique_ids = [file.split(".")[0] for file in user_chat_files[:20]] if user_chat_files else []
         load_chat_history(ctx.author.id)
 
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
