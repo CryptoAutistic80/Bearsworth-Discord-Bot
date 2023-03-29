@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-29 19:32:23",
+        "unique_id": "c0d3cd61-b82e-429a-9e96-fb12f27a32d4",
+        "user_id": 1065223064578686976
+    },
+    "chat_history": [
+        {
+            "role": "user",
+            "content": "Build an embedding that uses a free url like imgur.com for its background for my discord post"
+        },
+        {
+            "role": "assistant",
+            "content": "Sure thing, @lutune! To create an embedding with a custom background image, you can follow these steps:\n \n1. Find an image that you want to use as the background. You can use free image hosting sites like imgur.com or unsplash.com to find images that are free to use.\n\n2. Upload the image to the image hosting site and copy the direct URL of the image.\n\n3. In Discord, type a message and include the following code:\n\n```css\nbackground-image: url(INSERT_DIRECT_URL_HERE);\n```\n\n4. Replace INSERT_DIRECT_URL_HERE with the direct URL of your chosen background image.\n\n5. You can also include other CSS code to format your embedding as desired.\n\n6. Once you're happy with your message, hit enter to post it with your custom background image.\n\nThat's it! Let me know if you have any questions or need further assistance."
+        },
+        {
+            "role": "user",
+            "content": "<@283755133911695362>"
+        },
+        {
+            "role": "assistant",
+            "content": "@<283755133911695362> Hi there, how can I assist you today?"
+        },
+        {
+            "role": "user",
+            "content": "test listen along! Are you connected to spotify?"
+        },
+        {
+            "role": "assistant",
+            "content": "@<283755133911695362>, as an AI chatbot, I am not able to connect to Spotify directly. However, Discord has a feature called \"Listen Along\" that allows you to listen to music with your friends. To use this feature, you and your friends will need to have Spotify Premium accounts, and you will need to be in a voice channel together. Then, one person can start playing music on Spotify and share their screen, and everyone in the voice channel will be able to hear the music and see the album artwork on their screens. Would you like more information on how to use this feature?"
+        }
+    ]
+}
