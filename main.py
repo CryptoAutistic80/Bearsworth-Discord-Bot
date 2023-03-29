@@ -6,9 +6,11 @@ import asyncio
 from discord.ext import commands
 from keep_alive import keep_alive
 from discord.errors import NotFound
+import numpy as np
 import time
 import uuid
 import datetime
+import pinecone
 
 def load_prompt_parameters(filename):
     with open(filename, 'r') as file:
@@ -16,6 +18,7 @@ def load_prompt_parameters(filename):
 
 TOKEN = os.environ['DISCORD_TOKEN']
 OPENAI_KEY = os.environ['KEY_OPENAI']
+PINECONE_KEY = os.environ.get('YOUR_PINECONE_API_KEY')
 
 openai.api_key = OPENAI_KEY
 
@@ -27,6 +30,20 @@ active_threads = set()
 user_chat_histories = {}
 
 MAX_RETRIES = 10
+
+pinecone.init(api_key=PINECONE_KEY, environment='us-east1-gcp')
+indexer = pinecone.Index("brain69")
+
+# Define the gpt3_embedding function here
+async def gpt3_embedding(content, engine='text-embedding-ada-002'):
+    content = content.encode(encoding='ASCII', errors='ignore').decode()  # fix any UNICODE errors
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, lambda: openai.Embedding.create(
+        input=content,
+        engine=engine
+    ))
+    vector = response['data'][0]['embedding']  # this is a normal list
+    return vector
 
 async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs"):
     user_folder = os.path.join(chat_logs_folder, str(user_id))
@@ -50,8 +67,15 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
             "chat_history": segment,
         }
 
+        # Save chat log to a file
         with open(os.path.join(user_folder, f"{unique_id}.json"), "w") as file:
             json.dump(segmented_chat_log, file, indent=4)
+
+        # Vectorize the chat log and upsert it to the Pinecone index
+        content = ' '.join([message['content'] for message in segment])
+        vector = await gpt3_embedding(content)
+        vector_np = np.array(vector)  # Convert the list to a NumPy array
+        indexer.upsert([(unique_id, vector_np.tolist())], namespace="convo-logs")  # Pass the list of tuples, converting the NumPy array back to a list
       
 
 def load_chat_history(user_id, chat_logs_folder="chat_logs"):
@@ -85,7 +109,7 @@ def add_chat_history(user_id, author, content):
     if user_id not in user_chat_histories:
         user_chat_histories[user_id] = []
     user_chat_histories[user_id].append({"role": "user" if author != client.user else "assistant", "content": content})
-    user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
+    user_chat_histories[user_id] = user_chat_histories[user_id][-30:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
 
@@ -172,7 +196,7 @@ async def end(ctx):
         user_id = ctx.author.id
         if user_id in user_chat_histories:
             chat_history = user_chat_histories[user_id]
-            await save_chat_history(user_id, chat_history)
+            asyncio.create_task(save_chat_history(user_id, chat_history))
             del user_chat_histories[user_id]
 
         await asyncio.sleep(2)
@@ -189,7 +213,13 @@ async def end_inactive_conversation(user_id, channel, timeout=15*60):
         await save_chat_history(user_id, chat_history)
         del user_chat_histories[user_id]
 
-    await channel.delete()
+    try:
+        await channel.delete()
+    except NotFound:
+        print(f"Channel not found for user {user_id}. It may have been deleted by another process.")
+    except Exception as e:
+        print(f"Error occurred while deleting the channel for user {user_id}: {e}")
+
     active_threads.discard(user_id)
 
 @client.event
