@@ -46,36 +46,40 @@ async def gpt3_embedding(content, engine='text-embedding-ada-002'):
     return vector
 
 async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs"):
-    user_folder = os.path.join(chat_logs_folder, str(user_id))
-    os.makedirs(user_folder, exist_ok=True)
+    try:
+        user_folder = os.path.join(chat_logs_folder, str(user_id))
+        os.makedirs(user_folder, exist_ok=True)
 
-    timestamp = int(time.time())
-    formatted_timestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = int(time.time())
+        formatted_timestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
-    for i in range(0, len(chat_history), 6):
-        segment = chat_history[i:i+6]
-        unique_id = str(uuid_lib.uuid4())
+        for i in range(0, len(chat_history), 6):
+            segment = chat_history[i:i+6]
+            unique_id = str(uuid_lib.uuid4())
 
-        metadata = {
-            "timestamp": formatted_timestamp,
-            "unique_id": unique_id,
-            "user_id": user_id,
-        }
+            metadata = {
+                "timestamp": formatted_timestamp,
+                "unique_id": unique_id,
+                "user_id": user_id,
+            }
 
-        segmented_chat_log = {
-            "metadata": metadata,
-            "chat_history": segment,
-        }
+            segmented_chat_log = {
+                "metadata": metadata,
+                "chat_history": segment,
+            }
 
-        # Save chat log to a file
-        with open(os.path.join(user_folder, f"{unique_id}.json"), "w") as file:
-            json.dump(segmented_chat_log, file, indent=4)
+            # Save chat log to a file
+            with open(os.path.join(user_folder, f"{unique_id}.json"), "w") as file:
+                json.dump(segmented_chat_log, file, indent=4)
 
-        # Vectorize the chat log and upsert it to the Pinecone index
-        content = ' '.join([message['content'] for message in segment])
-        vector = await gpt3_embedding(content)
-        vector_np = np.array(vector)  # Convert the list to a NumPy array
-        indexer.upsert([(unique_id, vector_np.tolist())], namespace="convo-logs")  # Pass the list of tuples, converting the NumPy array back to a list
+            # Vectorize the chat log and upsert it to the Pinecone index
+            content = ' '.join([message['content'] for message in segment])
+            vector = await gpt3_embedding(content)
+            vector_np = np.array(vector)  # Convert the list to a NumPy array
+            
+            indexer.upsert([(unique_id, vector_np.tolist())], namespace="convo-logs")  # Updated line
+    except Exception as e:
+        print(f"Failed to save chat history: {e}")
 
 
 async def query_pinecone(query, top_k=10, namespace="convo-logs"):

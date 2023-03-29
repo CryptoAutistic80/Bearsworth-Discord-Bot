@@ -1,0 +1,25 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-29 20:59:28",
+        "unique_id": "0e40eae1-ec46-4a2d-9b69-3820101cf135",
+        "user_id": 701381748843610163
+    },
+    "chat_history": [
+        {
+            "role": "user",
+            "content": "hello hello fella"
+        },
+        {
+            "role": "assistant",
+            "content": "Hey hey! Good to see you again, mate. Anything you want to chat about or any questions you have? Feel free to toss 'em my way. I'm here for a good time and to help you out! \ud83d\ude01"
+        },
+        {
+            "role": "user",
+            "content": "giggidy"
+        },
+        {
+            "role": "assistant",
+            "content": "Haha, giggidy indeed! \ud83d\ude04 Feel free to hit me with any questions or let me know if you want to chat about something specific. I'm here for you, my friend!"
+        }
+    ]
+}
