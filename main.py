@@ -182,6 +182,11 @@ async def chat(ctx):
         # Load chat history for the user
         load_chat_history(ctx.author.id)
 
+        # Check if the ctx.channel is a TextChannel before creating a thread
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.send("You can only start a chat in a text channel.")
+            return
+
         thread = await ctx.channel.create_thread(name=f"Chat with {ctx.author.name}", type=discord.ChannelType.private_thread)
         await thread.send(f"Hello {ctx.author.mention}! You can start chatting with me. Type '!end' to end the conversation.")
         active_threads.add(ctx.author.id)
