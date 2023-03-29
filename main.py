@@ -82,7 +82,7 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
         print(f"Failed to save chat history: {e}")
 
 
-async def query_pinecone(query, top_k=10, namespace="convo-logs"):
+async def query_pinecone(query, top_k=12, namespace="convo-logs"):
     query_vector = await gpt3_embedding(query)
     query_vector_np = np.array(query_vector)
     query_results = indexer.query(
@@ -126,7 +126,7 @@ def add_chat_history(user_id, author, content):
     if user_id not in user_chat_histories:
         user_chat_histories[user_id] = []
     user_chat_histories[user_id].append({"role": "user" if author != client.user else "assistant", "content": content})
-    user_chat_histories[user_id] = user_chat_histories[user_id][-10:]
+    user_chat_histories[user_id] = user_chat_histories[user_id][-24:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
 

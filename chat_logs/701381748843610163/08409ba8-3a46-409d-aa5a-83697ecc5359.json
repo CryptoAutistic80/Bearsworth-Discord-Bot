@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-29 21:13:24",
+        "unique_id": "08409ba8-3a46-409d-aa5a-83697ecc5359",
+        "user_id": 701381748843610163
+    },
+    "chat_history": [
+        {
+            "role": "user",
+            "content": "it's part of your function"
+        },
+        {
+            "role": "assistant",
+            "content": "I apologize, but I'm still not sure what you're referring to. Could you please provide more context or information about \"pinecone\" and what function you're referring to?"
+        },
+        {
+            "role": "user",
+            "content": "pinecone is an indexing service, when we end this conversation your programming will vector embed it and index it on pinecone"
+        },
+        {
+            "role": "assistant",
+            "content": "I'm not programmed to perform any vector embedding or indexing on Pinecone. My primary function is to provide information and assistance on APTOS Bearables and DigiCash. If you have any questions or need any help, feel free to ask!"
+        },
+        {
+            "role": "user",
+            "content": "of course you don't know this, you aren't aware of the program i have operating you. just understand it is a fact"
+        },
+        {
+            "role": "assistant",
+            "content": "As an AI language model, I don't have the ability to be \"aware\" of anything outside of the code and data that I've been programmed with. However, I'm always here to chat with you and provide information on APTOS Bearables and DigiCash if you have any questions. Is there anything else you'd like to know or chat about?"
+        }
+    ]
+}
