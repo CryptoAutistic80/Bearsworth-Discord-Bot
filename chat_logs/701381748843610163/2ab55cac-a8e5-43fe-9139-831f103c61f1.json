@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-30 09:05:13",
+        "unique_id": "2ab55cac-a8e5-43fe-9139-831f103c61f1",
+        "user_id": 701381748843610163
+    },
+    "chat_history": [
+        {
+            "role": "assistant",
+            "content": "You got it! I'll be sure to introduce myself that way from now on. Thanks for the suggestion, and let me know if you have any further questions or need help with anything related to APTOS Bearables or DigiCash."
+        },
+        {
+            "role": "user",
+            "content": "Summerise what we discussed yesterday"
+        },
+        {
+            "role": "assistant",
+            "content": "I apologize, but since I'm an AI language model, I don't have the capability to remember previous conversations. However, if you could provide me with some context or a reminder about what we discussed yesterday, I would be happy to try and give you a summary of our conversation."
+        },
+        {
+            "role": "user",
+            "content": "What we discussed recently"
+        },
+        {
+            "role": "assistant",
+            "content": "I apologize, but I don't have any record of our previous conversation as I'm programmed to only respond to the current conversation. Could you please remind me of what we recently discussed so that I can provide a summary for you?"
+        },
+        {
+            "role": "user",
+            "content": "hey friend"
+        }
+    ]
+}

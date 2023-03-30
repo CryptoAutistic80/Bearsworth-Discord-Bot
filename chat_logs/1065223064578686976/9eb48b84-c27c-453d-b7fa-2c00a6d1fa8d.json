@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-30 01:41:20",
+        "unique_id": "9eb48b84-c27c-453d-b7fa-2c00a6d1fa8d",
+        "user_id": 1065223064578686976
+    },
+    "chat_history": [
+        {
+            "role": "user",
+            "content": "Please style this with\n```html\n<body>\n</body>\n```"
+        },
+        {
+            "role": "assistant",
+            "content": "Sure! Here's an example of how you can style your webpage using CSS within the `body` element:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n\t<meta charset=\"UTF-8\">\n\t<title>My Webpage</title>\n\t<style>\n\t\tbody {\n\t\t\tbackground-color: #f7f7f7;\n\t\t\tfont-family: Arial, sans-serif;\n\t\t\tfont-size: 16px;\n\t\t\tline-height: 1.5;\n\t\t\tmargin: 0;\n\t\t\tpadding: 0;\n\t\t}\n\t\t\n\t\th1 {\n\t\t\tfont-size: 3rem;\n\t\t\tcolor: #333;\n\t\t\ttext-align: center;\n\t\t\tmargin-top: 50px;\n\t\t}\n\t\t\n\t\tp {\n\t\t\tcolor: #666;\n\t\t\ttext-align: center;\n\t\t\tmargin-top: 20px;\n\t\t}\n\t\t\n\t\tbutton {\n\t\t\tbackground-color: #333;\n\t\t\tcolor: #fff;\n\t\t\tborder: none;\n\t\t\tpadding: 10px 20px;\n\t\t\tborder-radius: 5px;\n\t\t\tdisplay: block;\n\t\t\tmargin: 50px auto 0 auto;\n\t\t\tcursor: pointer;\n\t\t}\n\t\t\n\t\tbutton:hover {\n\t\t\tbackground-color: #666;"
+        },
+        {
+            "role": "user",
+            "content": "Can you give some basics to setting up the source editor with hammer tool I. Steam?"
+        },
+        {
+            "role": "assistant",
+            "content": "Certainly! Here's a step-by-step guide on how to set up the Source Editor with Hammer Tool in Steam:\n\n1. First, you'll need to download and install Steam on your computer if you haven't already. You can download Steam from the official website at https://store.steampowered.com/about/.\n\n2. Once you have Steam installed, you can launch it and log in to your account.\n\n3. In the Steam app, go to the Library tab and click on the drop-down menu at the top that says \"Games\".\n\n4. From the drop-down menu, select Tools.\n\n5. Scroll through the list of tools until you find \"Source SDK\". Click on it, then click on the \"Install\" button.\n\n6. Once Source SDK is installed, go to your Steam installation directory (usually located at C:\\Program Files (x86)\\Steam) and navigate to steamapps\\common\\Source SDK\\bin.\n\n7. In this directory, you should see a file called \"hammer.exe\". Double-click on it to launch Hammer Editor.\n\n8. In Hammer Editor, you can create new maps or open existing ones by going to File > New or File > Open.\n\n9. To customize your Hammer Editor settings, such as"
+        },
+        {
+            "role": "user",
+            "content": "Do you have reference to any popular youtubers who edit in hammer still?"
+        },
+        {
+            "role": "assistant",
+            "content": "There are a few popular YouTubers who still use Hammer Editor for their level design and editing needs. Here are a few examples:\n\n1. TopHATTwaffle: He's a popular YouTuber who creates tutorials and guides for level design and mapping in Hammer Editor. His channel can be found at https://www.youtube.com/user/rocketrascal34.\n\n2. 3kliksphilip: He's another well-known YouTuber who creates content related to level design, mapping, and game development using Hammer Editor. His channel can be found at https://www.youtube.com/user/3kliksphilip.\n\n3. Mr. Brightside: He's a smaller YouTuber who focuses on editing in Hammer Editor for various games, including Half-Life, Counter-Strike, and Team Fortress 2. His channel can be found at https://www.youtube.com/user/CrimsonBrightside.\n\nThese are just a few examples of the many talented creators who still use Hammer Editor for their level design needs."
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "timestamp": "2023-03-29 21:45:49",
+        "unique_id": "19837ed9-b054-487e-b826-7428b733cae6",
+        "user_id": 1065223064578686976
+    },
+    "chat_history": [
+        {
+            "role": "user",
+            "content": "lets start a new"
+        },
+        {
+            "role": "assistant",
+            "content": "Sure thing! What's on your mind? Do you have any questions about APTOS Bearables or DigiCash that I can help with? Or do you want to chat about something else? I'm here for you!"
+        },
+        {
+            "role": "user",
+            "content": "test"
+        },
+        {
+            "role": "assistant",
+            "content": "I'm here and ready to assist you! Is there anything you'd like to know or chat about?"
+        },
+        {
+            "role": "user",
+            "content": "<@283755133911695362>"
+        },
+        {
+            "role": "assistant",
+            "content": "I'm sorry, but as an AI language model, I don't have a user ID or the capability to receive direct messages or mentions like human users do on Discord. However, I'm here to chat and help with any questions you may have about APTOS Bearables or DigiCash. Let me know if there's anything specific you'd like to ask or talk about!"
+        }
+    ]
+}

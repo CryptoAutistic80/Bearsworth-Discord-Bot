@@ -82,7 +82,7 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
         print(f"Failed to save chat history: {e}")
 
 
-async def query_pinecone(query, top_k=12, namespace="convo-logs"):
+async def query_pinecone(query, top_k=8, namespace="convo-logs"):
     query_vector = await gpt3_embedding(query)
     query_vector_np = np.array(query_vector)
     query_results = indexer.query(
@@ -119,14 +119,43 @@ def load_chat_history(user_id, chat_logs_folder="chat_logs"):
                     user_chat_histories[user_id].extend(segmented_chat_log["chat_history"])
         except FileNotFoundError:
             print(f"Chat history file not found for user {user_id} with file {chat_file}.")
-          
+
+
+def load_recent_messages(user_id, num_messages=20, chat_logs_folder="chat_logs"):
+    user_folder = os.path.join(chat_logs_folder, str(user_id))
+
+    if not os.path.exists(user_folder):
+        return []
+
+    chat_files = []
+    for root, _, files in os.walk(user_folder):
+        for file in files:
+            if file.endswith(".json"):
+                chat_files.append(os.path.join(root, file))
+
+    chat_files.sort(key=lambda x: json.load(open(x))["metadata"]["timestamp"], reverse=True)
+
+    recent_messages = []
+    for chat_file in chat_files:
+        try:
+            with open(chat_file, "r") as file:
+                segmented_chat_log = json.load(file)
+                if segmented_chat_log["metadata"]["user_id"] == user_id:
+                    recent_messages.extend(segmented_chat_log["chat_history"])
+                if len(recent_messages) >= num_messages:
+                    break
+        except FileNotFoundError:
+            print(f"Chat history file not found for user {user_id} with file {chat_file}.")
+
+    return recent_messages[-num_messages:]
+
 
 def add_chat_history(user_id, author, content):
     global user_chat_histories
     if user_id not in user_chat_histories:
         user_chat_histories[user_id] = []
     user_chat_histories[user_id].append({"role": "user" if author != client.user else "assistant", "content": content})
-    user_chat_histories[user_id] = user_chat_histories[user_id][-24:]
+    user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
 
@@ -182,15 +211,16 @@ async def get_response(message_author_id, message_content):
                         chat_log = json.load(f)
                         relevant_messages.extend(chat_log["chat_history"])
 
-            # Combine the semantically relevant messages with the 10 most recent messages
-            combined_messages = relevant_messages + user_chat_histories.get(message_author_id, [])
+            # Combine the semantically relevant messages with the recent messages
+            recent_messages = user_chat_histories.get(message_author_id, [])
+            combined_messages = relevant_messages + recent_messages
 
             async with api_semaphore:
                 loop = asyncio.get_event_loop()
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=prompt_parameters["model"],
                     messages=prompt_parameters["messages"] + combined_messages + [{"role": "user", "content": message_content}],
-                    max_tokens=250,
+                    max_tokens=200,
                     temperature=0.8,
                     frequency_penalty=0.25,
                     presence_penalty=0.05
@@ -215,8 +245,9 @@ async def chat(ctx):
     else:
         print("Chat command triggered")
 
-        # Load chat history for the user
-        load_chat_history(ctx.author.id)
+        # Load chat history for the user only if it's not already loaded
+        if ctx.author.id not in user_chat_histories:
+            load_chat_history(ctx.author.id)
 
         # Check if the ctx.channel is a TextChannel before creating a thread
         if not isinstance(ctx.channel, discord.TextChannel):
@@ -275,6 +306,11 @@ async def on_message(message):
     # Ignore messages in non-private threads or outside threads
     if not isinstance(message.channel, discord.Thread) or not message.channel.is_private:
         return
+
+    # Load the most recent messages when the !chat command is used
+    if message.content.startswith("!chat"):
+        recent_messages = load_recent_messages(message.author.id)
+        user_chat_histories[message.author.id] = recent_messages
 
     add_chat_history(message.author.id, message.author, message.content)
 
