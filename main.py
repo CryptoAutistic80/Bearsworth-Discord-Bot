@@ -1,7 +1,28 @@
+ # _____ _______     _______ _______ ____            _    _ _______ _____  _____ _______ _____ _____  
+# / ____|  __ \ \   / /  __ \__   __/ __ \      /\  | |  | |__   __|_   _|/ ____|__   __|_   _/ ____| 
+#| |    | |__) \ \_/ /| |__) | | | | |  | |    /  \ | |  | |  | |    | | | (___    | |    | || |      
+#| |    |  _  / \   / |  ___/  | | | |  | |   / /\ \| |  | |  | |    | |  \___ \   | |    | || |      
+#| |____| | \ \  | |  | |      | | | |__| |  / ____ \ |__| |  | |   _| |_ ____) |  | |   _| || |____  
+# \_____|_|  \_\ |_|  |_|      |_|  \____/  /_/    \_\____/   |_|  |_____|_____/   |_|  |_____\_____| 
+                                                                                                     
+                                                                                                     
+# ____  _            _        _           _         _____                       _                      
+#|  _ \| |          | |      | |         (_)       |_   _|                     (_)                     
+#| |_) | | ___   ___| | _____| |__   __ _ _ _ __     | |  _ __ ___   __ _  __ _ _ _ __   ___  ___ _ __ 
+#|  _ <| |/ _ \ / __| |/ / __| '_ \ / _` | | '_ \    | | | '_ ` _ \ / _` |/ _` | | '_ \ / _ \/ _ \ '__|
+#| |_) | | (_) | (__|   < (__| | | | (_| | | | | |  _| |_| | | | | | (_| | (_| | | | | |  __/  __/ |   
+#|____/|_|\___/ \___|_|\_\___|_| |_|\__,_|_|_| |_| |_____|_| |_| |_|\__,_|\__, |_|_| |_|\___|\___|_|   
+#                                                                          __/ |                       
+#      James Walford 2023                                                                   |___/
+
+# --------------------
+# Import libraries
+# --------------------
 import os
 import discord
 import openai
 import json
+import re
 import asyncio
 from discord.ext import commands
 from keep_alive import keep_alive
@@ -12,10 +33,25 @@ import uuid as uuid_lib
 import datetime
 import pinecone
 
+# --------------------
+# Global variables
+# --------------------
+bot_sleeping = False
+
+# --------------------
+# Utility functions
+# --------------------
 def load_prompt_parameters(filename):
     with open(filename, 'r') as file:
         return json.load(file)
 
+def should_respond():
+    global bot_sleeping
+    return not bot_sleeping
+
+# --------------------
+# Environment variables and API keys
+# --------------------
 TOKEN = os.environ['DISCORD_TOKEN']
 OPENAI_KEY = os.environ['KEY_OPENAI']
 PINECONE_KEY = os.environ.get('YOUR_PINECONE_API_KEY')
@@ -34,7 +70,9 @@ MAX_RETRIES = 10
 pinecone.init(api_key=PINECONE_KEY, environment='us-east1-gcp')
 indexer = pinecone.Index("brain69")
 
-# Define the gpt3_embedding function here
+# --------------------
+# GPT-3 Embedding function
+# --------------------
 async def gpt3_embedding(content, engine='text-embedding-ada-002'):
     content = content.encode(encoding='ASCII', errors='ignore').decode()  # fix any UNICODE errors
     loop = asyncio.get_event_loop()
@@ -45,6 +83,9 @@ async def gpt3_embedding(content, engine='text-embedding-ada-002'):
     vector = response['data'][0]['embedding']  # this is a normal list
     return vector
 
+# --------------------
+# Save chat history function
+# --------------------
 async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs"):
     try:
         user_folder = os.path.join(chat_logs_folder, str(user_id))
@@ -53,8 +94,8 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
         timestamp = int(time.time())
         formatted_timestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
-        for i in range(0, len(chat_history), 6):
-            segment = chat_history[i:i+6]
+        for i in range(0, len(chat_history), 3):
+            segment = chat_history[i:i+3]
             unique_id = str(uuid_lib.uuid4())
 
             metadata = {
@@ -81,8 +122,10 @@ async def save_chat_history(user_id, chat_history, chat_logs_folder="chat_logs")
     except Exception as e:
         print(f"Failed to save chat history: {e}")
 
-
-async def query_pinecone(query, top_k=8, namespace="convo-logs"):
+# --------------------
+# Query Pinecone function
+# --------------------
+async def query_pinecone(query, top_k=3, namespace="convo-logs"):
     query_vector = await gpt3_embedding(query)
     query_vector_np = np.array(query_vector)
     query_results = indexer.query(
@@ -92,7 +135,9 @@ async def query_pinecone(query, top_k=8, namespace="convo-logs"):
     )
     return [(match['id'], match['score']) for match in query_results['matches']]
 
-
+# --------------------
+# Load chat history function
+# --------------------
 def load_chat_history(user_id, chat_logs_folder="chat_logs"):
     user_folder = os.path.join(chat_logs_folder, str(user_id))
 
@@ -120,8 +165,10 @@ def load_chat_history(user_id, chat_logs_folder="chat_logs"):
         except FileNotFoundError:
             print(f"Chat history file not found for user {user_id} with file {chat_file}.")
 
-
-def load_recent_messages(user_id, num_messages=20, chat_logs_folder="chat_logs"):
+# --------------------
+# Load recent messages function
+# --------------------
+def load_recent_messages(user_id, num_messages=10, chat_logs_folder="chat_logs"):
     user_folder = os.path.join(chat_logs_folder, str(user_id))
 
     if not os.path.exists(user_folder):
@@ -149,19 +196,26 @@ def load_recent_messages(user_id, num_messages=20, chat_logs_folder="chat_logs")
 
     return recent_messages[-num_messages:]
 
-
+# --------------------
+# Add chat history function
+# --------------------
 def add_chat_history(user_id, author, content):
     global user_chat_histories
+    if content.lower() == "!end":
+        return
+
     if user_id not in user_chat_histories:
         user_chat_histories[user_id] = []
     user_chat_histories[user_id].append({"role": "user" if author != client.user else "assistant", "content": content})
-    user_chat_histories[user_id] = user_chat_histories[user_id][-20:]
+    user_chat_histories[user_id] = user_chat_histories[user_id][-6:]
 
 prompt_parameters = load_prompt_parameters('prompt_parameters.json')
 
 api_semaphore = asyncio.Semaphore(30)
 
-# Create the request queue
+# --------------------
+# Request queue and processing
+# --------------------
 request_queue = asyncio.Queue()
 
 async def process_requests():
@@ -220,8 +274,8 @@ async def get_response(message_author_id, message_content):
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=prompt_parameters["model"],
                     messages=prompt_parameters["messages"] + combined_messages + [{"role": "user", "content": message_content}],
-                    max_tokens=200,
-                    temperature=0.8,
+                    max_tokens=400,
+                    temperature=0.4,
                     frequency_penalty=0.25,
                     presence_penalty=0.05
                 ))
@@ -233,6 +287,9 @@ async def get_response(message_author_id, message_content):
             else:
                 raise e
 
+# --------------------
+# Client events and commands
+# --------------------
 @client.event
 async def on_ready():
     print('We have logged in as {0.user} in main'.format(client))
@@ -261,7 +318,6 @@ async def chat(ctx):
         # Call end_inactive_conversation after starting the conversation
         asyncio.create_task(end_inactive_conversation(ctx.author.id, thread))
 
-
 @client.command()
 async def end(ctx):
     if isinstance(ctx.channel, discord.Thread) and ctx.channel.is_private:
@@ -274,6 +330,26 @@ async def end(ctx):
         await asyncio.sleep(2)
         await ctx.channel.delete()
         active_threads.discard(ctx.author.id)
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def sleep(ctx):
+    global bot_sleeping
+    if not bot_sleeping:
+        bot_sleeping = True
+        await ctx.send("Man I'm zonked! I'm going to get some shut eye boss man... zzzzz")
+    else:
+        await ctx.send("I'm already sleeping... zzzzz")
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def wake(ctx):
+    global bot_sleeping
+    if bot_sleeping:
+        bot_sleeping = False
+        await ctx.send("Good morning! I'm awake and ready to chat.")
+    else:
+        await ctx.send("I'm already awake!")
 
 async def end_inactive_conversation(user_id, channel, timeout=15*60):
     await asyncio.sleep(timeout)
@@ -294,10 +370,20 @@ async def end_inactive_conversation(user_id, channel, timeout=15*60):
 
     active_threads.discard(user_id)
 
+def clean_input(text):
+    # Remove non-ASCII characters
+    cleaned_text = re.sub(r'[^\x00-\x7F]+', '', text)
+    return cleaned_text
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+
+    global bot_sleeping  # Add this line to access the bot_sleeping variable
+    if bot_sleeping and not message.content.lower() in ["!wake", "!end"]:
+        if message.content.lower() == "!chat":
+            await message.channel.send("Sorry, I'm sleeping right now... zzzzz")
         return
 
     # Process commands first
@@ -312,15 +398,21 @@ async def on_message(message):
         recent_messages = load_recent_messages(message.author.id)
         user_chat_histories[message.author.id] = recent_messages
 
-    add_chat_history(message.author.id, message.author, message.content)
+    cleaned_message_content = clean_input(message.content)
+    if cleaned_message_content.strip() in ["!end", "!chat"]:
+        return
 
-    message_content = message.content
+    add_chat_history(message.author.id, message.author, cleaned_message_content)
+
     response_future = asyncio.Future()
 
-    await request_queue.put((message.author.id, message_content, response_future))
+    await request_queue.put((message.author.id, cleaned_message_content, response_future))
 
     try:
-        response_text = await response_future
+        # Add the following line to show the bot is typing while waiting for the response
+        async with message.channel.typing():
+            response_text = await response_future
+
         # Check if the channel still exists before sending a message
         if message.channel:
             await message.channel.send(response_text)
@@ -332,6 +424,7 @@ async def on_message(message):
     except Exception as e:
         print(f"Error occurred while processing message after all retries: {e}")
         await message.channel.send("I'm sorry, there was an issue processing your request. Please try again later.")
+
 
 keep_alive()
 client.run(TOKEN)

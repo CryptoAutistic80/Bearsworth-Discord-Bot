@@ -16,6 +16,9 @@ xds-protos = "^0.0.11"
 gTTS = "^2.3.1"
 pydub = "^0.25.1"
 pinecone-client = "^2.2.1"
+pdfminer = "^20191125"
+pdfplumber = "^0.8.0"
+spacy = "^3.5.1"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"
